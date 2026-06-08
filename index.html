@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mystic Biot Spell</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght=700&family=Kanit:wght=300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --dark-magic: #0a0118; --wizard-purple: #3c096c; --toxic-green: #39ff14; --mystic-violet: #7b2cbf; }
+        * { box-sizing: border-box; touch-action: manipulation; }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--dark-magic); background-image: radial-gradient(circle, #240046 0%, #0a0118 100%); margin: 0; min-height: 100vh; display: flex; justify-content: center; color: #e0aaff; overflow-x: hidden; }
+        .container { width: 100%; max-width: 480px; padding: 15px; position: relative; }
+        h1 { font-family: 'Cinzel', serif; color: var(--toxic-green); text-shadow: 0 0 15px var(--toxic-green); margin: 10px 0; text-align: center; line-height: 1.2;}
+        #sound-toggle { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: 1px solid var(--mystic-violet); color: #fff; font-size: 1.2rem; padding: 8px 12px; border-radius: 50%; cursor: pointer; z-index: 100; transition: 0.2s;}
+        .btn-spell { background: linear-gradient(45deg, #240046, #7b2cbf); color: var(--toxic-green); border: 2px solid var(--toxic-green); padding: 15px; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; text-transform: uppercase; width: 100%; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); transition: 0.2s; margin-top: 10px; }
+        .screen { display: none; animation: fadeIn 0.5s ease; } .active { display: block; }
+        @keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+        .card-login { text-align: center; margin-top: 5vh; padding: 30px; background: rgba(0,0,0,0.5); border-radius: 30px; border: 1px solid var(--mystic-violet); }
+        input[type="text"], select { width: 100%; padding: 12px; border: 2px solid var(--mystic-violet); border-radius: 12px; background: #10002b; color: var(--toxic-green); font-size: 1rem; text-align: center; margin-bottom: 15px; outline: none; font-family: 'Kanit', sans-serif; -webkit-appearance: none; }
+        select { text-align-last: center; cursor: pointer; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .cell { background: #240046; aspect-ratio: 1/1.6; border-radius: 8px; border: 1px solid var(--mystic-violet); display: flex; flex-direction: column; padding: 4px; font-size: 10px; text-align: center; transition: 0.2s; position: relative; cursor: pointer; }
+        .cell.marked { background: var(--mystic-violet); border-color: var(--toxic-green); box-shadow: inset 0 0 10px var(--toxic-green); color: var(--toxic-green); transform: scale(0.98); }
+        .q-text { height: 75%; display: flex; align-items: center; justify-content: center; line-height: 1.1; font-weight: 300; pointer-events: none; overflow: hidden; word-break: break-word; }
+        .f-input { width: 100%; border: none; border-bottom: 1px dashed rgba(255,255,255,0.3); font-size: 10px; text-align: center; background: transparent; color: #fff; outline: none; padding-bottom: 2px;}
+        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #240046, #000); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 200; text-align: center; padding: 20px;}
+        .rules-text { text-align: left; color: #e0aaff; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; }
+        
+        #magic-blast {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 0px; height: 0px; border-radius: 50%;
+            background: radial-gradient(circle, var(--toxic-green) 0%, transparent 70%);
+            z-index: 150; pointer-events: none; display: none;
+            box-shadow: 0 0 100px 50px var(--toxic-green);
+        }
+        @keyframes blast-anim {
+            0% { width: 0; height: 0; opacity: 1; }
+            100% { width: 300vw; height: 300vw; opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<audio id="bgm" src="./music-background.mp3" loop preload="auto"></audio>
+<audio id="snd-witch" src="./witch-laughing.mp3" preload="auto"></audio>
+<audio id="snd-bingo-witch" src="./witch-laughing.mp3" preload="auto"></audio>
+
+<div id="magic-blast"></div>
+
+<div class="container">
+    <button id="sound-toggle" onclick="toggleSound()">🔊</button>
+
+    <div id="screen-login" class="screen active">
+        <div class="card-login">
+            <span style="font-size: 4rem;">🔮</span>
+            <h1>Mystic Biot Spell</h1>
+            
+            <input type="text" id="input-name" placeholder="ระบุชื่อที่นี่..." autocomplete="off">
+            <input type="text" id="input-major" placeholder="ระบุสาขาวิชาที่นี่..." autocomplete="off">
+            
+            <select id="select-team">
+                <option value="" disabled selected>-- เลือกทีมของคุณ --</option>
+                <option value="1">ทีมที่ 1</option>
+                <option value="2">ทีมที่ 2</option>
+            </select>
+
+            <button class="btn-spell" onclick="showRules()">CAST SPELL</button>
+        </div>
+    </div>
+
+    <div id="screen-rules" class="screen">
+        <div class="card-login">
+            <h2 style="color: var(--toxic-green); font-family: 'Cinzel', serif; font-size: 1.5rem; margin-top: 0;">📜 Rules of Magic</h2>
+            <div class="rules-text">
+                1. หาเพื่อนที่มีลักษณะตรงกับช่องกระดาน<br>
+                <span style="color:#8a6aab; font-size:0.8rem;">(Find someone who matches the description)</span><br>
+                2. พิมพ์ชื่อเพื่อนลงในช่องนั้นให้ถูกต้อง<br>
+                <span style="color:#8a6aab; font-size:0.8rem;">(Type their name in the box)</span><br>
+                3. สะสมให้ครบ 5 ช่องติดกัน (แนวตั้ง, แนวนอน หรือแนวทแยง) เพื่อชนะ!<br>
+                <span style="color:#8a6aab; font-size:0.8rem;">(Complete 5 in a row to win!)</span>
+            </div>
+            <button class="btn-spell" onclick="startGame()">ENTER THE GRID</button>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <h1 style="font-size: 1.2rem; margin-bottom: 10px;">Mystic Biot Spell</h1>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--toxic-green); font-size: 0.8rem;">
+            <span id="display-info"></span>
+            <span>BINGO = WIN</span>
+        </div>
+        <div class="grid" id="bingo-grid"></div>
+    </div>
+</div>
+
+<div id="win-overlay">
+    <h1 style="color: var(--toxic-green); font-size: 2.2rem; margin-bottom: 5px;">SPELL COMPLETE!</h1>
+    <h2 id="winner-name" style="color: #fff; font-size: 1.5rem; margin: 10px 0;"></h2>
+    <p style="color: #e0aaff; line-height: 1.8; font-size: 1.1rem;">
+        ดีใจที่ได้รู้จักชาว KU86 AI47 ทุกคน<br>
+        เจอเพื่อนถูกจริตก็อย่าลืมขอ IG เพื่อนน๊าาาาา<br>
+        <span style="color: var(--toxic-green); font-weight: 600;">จากพี่ฐาน BIOT AI46 🧬</span>
+    </p>
+    <button class="btn-spell" style="width: 250px; margin-top: 20px;" onclick="location.reload()">CAST SPELL AGAIN</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyABHw7Fb53ilnGz-z_uWc4OCwmNokKXyTE",
+        authDomain: "mystic-biot-spell.firebaseapp.com",
+        databaseURL: "https://mystic-biot-spell-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "mystic-biot-spell",
+        appId: "1:1019681078137:web:cc7ede590fde39bad64da8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.reportBingo = function(name, major, team, boardData) {
+        const cells = document.querySelectorAll('.cell');
+        
+        const questionData = Array.from(cells).map(c => {
+            const qText = c.querySelector('.q-text');
+            return qText ? qText.innerText : "🧪";
+        });
+
+        const markedStatesData = Array.from(cells).map(c => c.classList.contains('marked'));
+
+        push(ref(db, 'winners'), {
+            name: name,
+            major: major,
+            team: team,
+            board: boardData,
+            questions: questionData,
+            markedStates: markedStatesData,
+            timestamp: new Date().toLocaleString('th-TH')
+        });
+    }
+</script>
+
+<script>
+    let wizardName = "";
+    let wizardMajor = "";
+    let wizardTeam = "";
+    let bgmPlayed = false;
+    let isMuted = false;
+
+    // สำหรับใช้สร้างระบบเสียงสังเคราะห์คลิกอิเล็กทรอนิกส์
+    let audioCtx = null;
+
+    const questions = [
+        "กรุ๊ปเลือดเหมือนกัน", "เลี้ยงสัตว์แปลก", "เข้าด้วย tcas รอบเดียวกัน", "มีพี่น้อง", 
+        "เกิดเดือนเดียวกัน", "เป็นคนโสด", "ใส่แว่นตา", "ชอบเล่นกีฬา", "ติ่งk-pop", 
+        "ตัวอักษรชื่อเล่นเหมือนกัน", "เป็นสาววาย", "ไม่อาบน้ำตอนเช้า", "เป็นเด็กหอ", 
+        "ชอบเล่น Free Fire", "เล่นดนตรีเป็น", "เป็นอัศวินรัตติกาล", "Typeเส้นที่ชอบเหมือนกัน", 
+        "เป็นคนติดรำ", "ชอบกินของหวาน", "ส้มตำ lover", "มีไฟ TikTok 200+", "มีหน้าม้า", 
+        "หมาล่า Lover", "Sushiro lover", "มัจฉะlover", "ชอบดูอนิเมะ", "ชอบเล่นบอร์ดเกม", 
+        "กินเผ็ดมาก", "รู้จัก Ai Singing", "จะไปงาน Ai day Ai night", "ชอบเดินป่า", 
+        "ชอบทำอาหาร", "ห่อลิ้นได้", "กระดูกหลังหูอยู่ที่จมูก", "เป็นน้องค่าย Ai the series", 
+        "จะเข้าร่วมวันไหว้ครู", "ขับรถมามอเอง", "รู้จักบาร์ใหม่", "Follow ig samo ai", 
+        "มามอด้วยBTS", "เคยนั่งตะไล", "เติมแพ้คกี้ทุกวัน", "อยากเข้าร่วมชมรมในคณะ", 
+        "รู้จักไก่ทอดนายร.", "รู้จักเตยแก้วบาร์ใหม่", "รู้จักเซแลปหมามก", "เคยไหว้สามบู", 
+        "เคยขับgogo-bike", "เคยโดนวินโกงราคา", "ใส่ถุงเท้าสีชมพูเหมือนกัน"
+    ];
+
+    // ฟังก์ชันสร้างเสียงคลิกแบบสังเคราะห์ (ไม่ต้องใช้ไฟล์คลิกภายนอก หมดปัญหาเรื่องโหลดไม่ขึ้น)
+    function playSynthesizedClick() {
+        if (isMuted) return;
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            // ไล่เสียงจากสูงลงต่ำอย่างรวดเร็วเพื่อให้เกิดเสียง ป๊อป/คลิก ที่นุ่มนวล
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.08);
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.08);
+        } catch (e) {
+            console.warn("Web Audio API not supported or blocked", e);
+        }
+    }
+
+    const playSound = (id) => {
+        if (isMuted) return;
+        if (id === 'snd-click') {
+            playSynthesizedClick(); // วิ่งไปเรียกเสียงคลิกสังเคราะห์
+            return;
+        }
+        const sound = document.getElementById(id);
+        if (sound) {
+            sound.muted = false;
+            sound.currentTime = 0;
+            const playPromise = sound.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => console.warn(`Audio play blocked: ${id}`));
+            }
+        }
+    }
+
+    window.toggleSound = function() {
+        isMuted = !isMuted;
+        document.getElementById('sound-toggle').innerText = isMuted ? "🔇" : "🔊";
+        document.querySelectorAll('audio').forEach(audio => {
+            audio.muted = isMuted;
+        });
+    }
+
+    window.showRules = function() {
+        wizardName = document.getElementById('input-name').value.trim();
+        wizardMajor = document.getElementById('input-major').value.trim();
+        wizardTeam = document.getElementById('select-team').value;
+        
+        if(!wizardName || !wizardMajor || !wizardTeam) {
+            return alert("กรุณาระบุชื่อ สาขาวิชา และเลือกทีมให้ครบถ้วน!");
+        }
+        
+        if (!bgmPlayed) {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.2;
+            bgm.play().then(() => {
+                bgmPlayed = true;
+            }).catch(e => console.log("BGM pending interaction"));
+        }
+        
+        playSound('snd-witch');
+        document.getElementById('screen-login').classList.remove('active');
+        document.getElementById('screen-rules').classList.add('active');
+    }
+
+    window.startGame = function() {
+        document.getElementById('screen-rules').classList.remove('active');
+        document.getElementById('screen-game').classList.add('active');
+        document.getElementById('display-info').innerText = `Wizard: ${wizardName} (ทีม ${wizardTeam})`;
+        createGrid();
+    }
+
+    function createGrid() {
+        const grid = document.getElementById('bingo-grid');
+        grid.innerHTML = "";
+        const shuffle = [...questions].sort(() => 0.5 - Math.random()).slice(0, 24);
+        let qIndex = 0;
+        for(let i=0; i<25; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            if(i === 12) {
+                cell.classList.add('marked');
+                cell.innerHTML = `<div class="q-text" style="font-size:1.5rem">🧪</div><div style="font-size:8px;">FREE</div>`;
+            } else {
+                cell.innerHTML = `<div class="q-text">${shuffle[qIndex]}</div><input type="text" class="f-input" placeholder="Name" onclick="event.stopPropagation()">`;
+                cell.onclick = function() {
+                    const input = this.querySelector('input');
+                    if(input && input.value.trim() !== "") {
+                        playSound('snd-click'); // เสียงคลิกสังเคราะห์จะดังขึ้นที่นี่ทันที
+                        this.classList.toggle('marked');
+                        checkBingo();
+                    } else { 
+                        if (navigator.vibrate) navigator.vibrate(200); 
+                        alert("ใส่ชื่อเพื่อนก่อนร่ายเวทย์!"); 
+                    }
+                };
+                qIndex++;
+            }
+            grid.appendChild(cell);
+        }
+    }
+
+    function checkBingo() {
+        const cells = document.querySelectorAll('.cell');
+        const s = Array.from(cells).map(c => c.classList.contains('marked'));
+        let win = false;
+        
+        for(let i=0; i<25; i+=5) if(s[i] && s[i+1] && s[i+2] && s[i+3] && s[i+4]) win = true;
+        for(let i=0; i<5; i++) if(s[i] && s[i+5] && s[i+10] && s[i+15] && s[i+20]) win = true;
+        if(s[0] && s[6] && s[12] && s[18] && s[24]) win = true;
+        if(s[4] && s[8] && s[12] && s[16] && s[20]) win = true;
+
+        if(win) {
+            document.getElementById('bgm').pause();
+            playSound('snd-bingo-witch'); // เล่นเสียงแม่มดหัวเราะฉลองชัยชนะ
+            
+            const blast = document.getElementById('magic-blast');
+            blast.style.display = 'block';
+            blast.style.animation = 'blast-anim 1.5s forwards';
+
+            const boardData = Array.from(document.querySelectorAll('.cell')).map(c => {
+                const inp = c.querySelector('input');
+                return inp ? inp.value : "FREE";
+            });
+            
+            window.reportBingo(wizardName, wizardMajor, wizardTeam, boardData);
+            
+            setTimeout(() => {
+                document.getElementById('winner-name').innerText = `จอมเวทย์ ${wizardName}`;
+                document.getElementById('win-overlay').style.display = 'flex';
+            }, 1500);
+        }
+    }
+</script>
+</body>
+</html>
